@@ -89,6 +89,34 @@ var talksRegex = /^\/talks$/;
 var talksTitleRegex = /^\/talks\/([^\/]+)$/;
 var talksComentsRegex = /^\/talks\/([^\/]+)\/comments$/;
 
+//Long-polling
+var waiting = [];
+var changes = [];
+
+function registerChange(title) {
+    changes.push({ title: title, time: Date.now() });
+    waiting.forEach(function (waiter) {
+        sendTalks(getChangedTalks(waiter.since), waiter.response); 
+    });
+    waiting = [];
+}
+
+function waitForChanges(since, response) {
+    var waiter = { since: since, response: response };
+    waiting.push(waiter);
+    setTimeout(function () {
+        var found = waiting.indexOf(waiter);
+        if (found > -1) {
+            waiting.splice(found, 1);
+            sendTalks([], response);
+        }
+    }, 90 * 1000);
+}
+
+function getChangedTalks(since) {
+    
+}
+
 //Request helpers
 function readStreamAsJSON(stream, callback) {
     var data = "";
