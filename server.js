@@ -79,7 +79,7 @@ router.add("GET", talksRegex, function (request, response) {
             if (changed.length > 0)
                 sendTalks(changed, response);
             else
-                waitForChanges(since, response);    
+                waitForChanges(since, response);
         }
     }
 })
@@ -96,7 +96,7 @@ var changes = [];
 function registerChange(title) {
     changes.push({ title: title, time: Date.now() });
     waiting.forEach(function (waiter) {
-        sendTalks(getChangedTalks(waiter.since), waiter.response); 
+        sendTalks(getChangedTalks(waiter.since), waiter.response);
     });
     waiting = [];
 }
@@ -114,7 +114,25 @@ function waitForChanges(since, response) {
 }
 
 function getChangedTalks(since) {
-    
+    var found = [];
+    function alreadySeen(title) {
+        return found.some(function (f) {
+            return f.title == title;
+        });
+    }
+
+    for (var i = changes.length - 1; i >= 0; i--) {
+        var change = changes[i];
+        if (change.time <= since)
+            break;
+        else if (alreadySeen(change.title))
+            continue;
+        else if (change.title in talks)
+            found.push(talks[change.title]);
+        else
+            found.push({ title: change.title, deleted: true });
+    }
+    return found;
 }
 
 //Request helpers
