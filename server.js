@@ -6,6 +6,11 @@ var fileServer = ecstatic({ root: "./public" });
 var router = new Router();
 var talks = Object.create(null);
 
+//Router Regexs
+var talksRegex = /^\/talks$/;
+var talksTitleRegex = /^\/talks\/([^\/]+)$/;
+var talksComentsRegex = /^\/talks\/([^\/]+)\/comments$/;
+
 
 //Server configuration
 http.createServer(function (request, response) {
@@ -84,11 +89,6 @@ router.add("GET", talksRegex, function (request, response) {
     }
 })
 
-//Router Regexs
-var talksRegex = /^\/talks$/;
-var talksTitleRegex = /^\/talks\/([^\/]+)$/;
-var talksComentsRegex = /^\/talks\/([^\/]+)\/comments$/;
-
 //Long-polling
 var waiting = [];
 var changes = [];
@@ -157,7 +157,7 @@ function readStreamAsJSON(stream, callback) {
 }
 
 //Response helpers
-var htmlStatus = new Object.create(null);
+var htmlStatus = Object.create(null);
 htmlStatus.OK = 200;
 htmlStatus.noContent = 204;
 htmlStatus.badRequest = 400;
