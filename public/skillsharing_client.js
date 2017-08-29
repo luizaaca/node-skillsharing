@@ -15,6 +15,21 @@ function request(options, callback) {
 
 var lastServerTime = 0;
 
+function waitForChanges() {
+    request({ pathname: "talks?changesSince=" + lastServerTime }, function (error, response) {
+        if (error) {
+            setTimeout(waitForChanges, 2500);
+            console.log(error.stack);
+        } else {
+            response = JSON.parse(response);
+            displayTalks(response.talks);
+            lastServerTime = response.serverTime;
+            waitForChanges();
+        }
+    })
+}
+
+
 request({ pathname: "talks" }, function (error, response) {
     if (error)
         reportError(error);
@@ -92,3 +107,38 @@ function drawTalk(talk) {
     });
     return node;
 }
+
+function deleteTalk(title) {
+    request({ pathname: talkUrl(title), method: "DELETE" }, reportError);
+}
+
+var nameField = document.querySelector("#name");
+nameField.value = localStorage.getItem("name") || "";
+
+nameField.addEventListener("change", function () {
+    localStorage.setItem("name", nameField.value);
+});
+
+function addComment(title, comment) {
+    var comment = { author: nameField.value, message: comment };
+    request({ pathname: talkUrl(title) + "/comments", method: "POST", body: JSON.stringify(comment) }, reportError);
+}
+
+function talkUrl(title) {
+    return "talks/" + encodeURIComponent(title);
+}
+
+var talkForm = document.querySelector("#newTalk");
+
+talkForm.addEventListener("submit", function (event) {
+    event.preventDefault();
+    request({
+        pathname: talkUrl(talkForm.elements.title.value),
+        method: "PUT",
+        body: JSON.stringify({
+            presenter: nameField.value,
+            summary: talkForm.elements.summary.value
+        })
+    }, reportError);
+    talkForm.reset();
+});
