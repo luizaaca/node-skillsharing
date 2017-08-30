@@ -1,6 +1,8 @@
+var config = require("./config");
 var http = require("http");
 var Router = require("./router");
 var ecstatic = require("ecstatic");
+var Repo = require("./repository");
 
 var fileServer = ecstatic({ root: "./public" });
 var router = new Router();
@@ -16,15 +18,19 @@ var talksComentsRegex = /^\/talks\/([^\/]+)\/comments$/;
 http.createServer(function (request, response) {
     if (!router.resolve(request, response))
         fileServer(request, response);
-}).listen(8888);
+}).listen(config.port);
 
 //Router configuration
 router.add("GET", talksTitleRegex, function (request, response, title) {
     if (title in talks)
         respondJSON(response, htmlStatus.OK, talks[title]);
-    else
+    else {
         respond(response, htmlStatus.notFound, "Talk '" + title + "' not found.");
+    }
 });
+
+//Initiate repository
+var db = new Repo(config.db.uri);
 
 router.add("DELETE", talksTitleRegex, function (request, response, title) {
     if (title in talks) {
@@ -47,6 +53,7 @@ router.add("PUT", talksTitleRegex, function (request, response, title) {
                 summary: talk.summary,
                 comments: []
             };
+            db.insert({ collection: "talks", body: talks[title] });
             registerChange(title);
             respond(response, htmlStatus.noContent, null);
         }
@@ -61,6 +68,7 @@ router.add("POST", talksComentsRegex, function (request, response, title) {
             respond(response, htmlStatus.badRequest, "Invalid comment data.");
         else if (title in talks) {
             talks[title].comments.push(comment);
+            db.update(talks[title]);
             registerChange(title);
             respond(response, htmlStatus.noContent, null);
         } else
@@ -71,12 +79,18 @@ router.add("POST", talksComentsRegex, function (request, response, title) {
 router.add("GET", talksRegex, function (request, response) {
     var query = require("url").parse(request.url, true).query;
     if (query.changesSince == null) {
-        var list = [];
-        for (var title in talks)
-            list.push(talks[title]);
-        sendTalks(list, response);
+        db.get({ collection: "talks" }, function (items) {
+            items.forEach(function(item){
+                talks[item.title] = item;
+            });
+            var list = [];
+            for (var title in talks)
+                list.push(talks[title]);
+            sendTalks(list, response);
+        });        
     } else {
         var since = Number(query.changesSince);
+
         if (isNaN(since))
             respond(response, htmlStatus.badRequest, "Invalid parameter.");
         else {
