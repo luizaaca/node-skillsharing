@@ -18,6 +18,7 @@
   },
   "homepage": "https://github.com/luizaaca/node-skillsharing#readme",
   "dependencies": {
-    "ecstatic": "^2.2.1"
+    "ecstatic": "^2.2.1",
+    "mongodb": "^2.2.31"
   }
 }
