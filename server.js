@@ -34,7 +34,8 @@ var db = new Repo(config.db.uri);
 
 router.add("DELETE", talksTitleRegex, function (request, response, title) {
     if (title in talks) {
-        delete talks[title];
+        db.delete({ collection: "talks", body: talks[title] })
+        delete talks[title];        
         registerChange(title);
     }
     respond(response, htmlStatus.noContent, null);
@@ -68,7 +69,7 @@ router.add("POST", talksComentsRegex, function (request, response, title) {
             respond(response, htmlStatus.badRequest, "Invalid comment data.");
         else if (title in talks) {
             talks[title].comments.push(comment);
-            db.update(talks[title]);
+            db.update({ collection: "talks", body: talks[title] });
             registerChange(title);
             respond(response, htmlStatus.noContent, null);
         } else
@@ -80,14 +81,14 @@ router.add("GET", talksRegex, function (request, response) {
     var query = require("url").parse(request.url, true).query;
     if (query.changesSince == null) {
         db.get({ collection: "talks" }, function (items) {
-            items.forEach(function(item){
+            items.forEach(function (item) {
                 talks[item.title] = item;
             });
             var list = [];
             for (var title in talks)
                 list.push(talks[title]);
             sendTalks(list, response);
-        });        
+        });
     } else {
         var since = Number(query.changesSince);
 

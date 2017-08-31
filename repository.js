@@ -23,6 +23,13 @@ Repo.prototype.update = function (data) {
     });
 };
 
+Repo.prototype.delete = function (data) {
+    this.context(data, function (err, collection) {
+        if (err) throw err;
+        collection.deleteOne({ title: data.body.title });
+    });
+};
+
 Repo.prototype.get = function (data, callback) {
     this.context(data, function (err, collection) {
         if (err) throw err;
